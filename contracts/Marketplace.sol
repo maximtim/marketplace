@@ -194,20 +194,24 @@ contract Marketplace is ERC1155Holder {
     {
         BidF storage bid = bidsFungible[tokenId][msg.sender];
         uint amount = bid.amount;
+        uint bidNum = bid.bidNum;
 
         require(amount > 0, "Auction doesn't exist");
+        require(block.timestamp > bid.startTime + AUCTION_DURATION, "Auction is not ended yet");
 
         bid.amount = 0;
         
-        if (block.timestamp > bid.startTime + AUCTION_DURATION &&
-            bid.bidNum > 2)
+        if (bidNum >= BIDS_MIN_COUNT)
         {
             // finish
             currencyToken.transfer(msg.sender, bid.price);
             baseToken.safeTransferFrom(address(this), bid.bidder, tokenId, amount, "");
         } else {
             // cancel
-            currencyToken.transfer(bid.bidder, bid.price);
+            if (bidNum > 0) {
+                currencyToken.transfer(bid.bidder, bid.price);
+            }
+            
             baseToken.safeTransferFrom(address(this), msg.sender, tokenId, amount, "");
         }
     }
@@ -308,20 +312,24 @@ contract Marketplace is ERC1155Holder {
     {
         BidNF storage bid = bidsNFT[tokenId];
         address owner = bid.owner;
+        uint bidNum = bid.bidNum;
 
         require(owner == msg.sender, "You are not owner or bid doesn't exist");
+        require(block.timestamp > bid.startTime + AUCTION_DURATION, "Auction is not ended yet");
 
         bid.owner = address(0);
         
-        if (block.timestamp > bid.startTime + AUCTION_DURATION &&
-            bid.bidNum >= BIDS_MIN_COUNT)
+        if (bidNum >= BIDS_MIN_COUNT)
         {
             // finish
             currencyToken.transfer(owner, bid.price);
             baseToken.safeTransferFrom(address(this), bid.bidder, tokenId, 1, "");
         } else {
             // cancel
-            currencyToken.transfer(bid.bidder, bid.price);
+            if (bidNum > 0) {
+                currencyToken.transfer(bid.bidder, bid.price);
+            }
+            
             baseToken.safeTransferFrom(address(this), owner, tokenId, 1, "");
         }
     }
