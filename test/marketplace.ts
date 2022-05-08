@@ -113,6 +113,16 @@ describe("Marketplace", function () {
       expect(await baseTokenImp.balanceOf(firstAddr, id)).to.eq(0);
     });
 
+    it("doesn't create listing if it already exists", async () => {
+      const price = 100;
+
+      await execTx(baseTokenImp.connect(first).setApprovalForAll(mktPlace.address, true));
+      await execTx(mktPlaceImp.connect(first).listItemNFT(id, price));
+
+      await execTx(baseTokenImp.connect(first).setApprovalForAll(mktPlace.address, true));
+      await expect(mktPlaceImp.connect(first).listItemNFT(id, price)).to.be.revertedWith("Lot already exists");
+    });
+
     context("Created listing", async () => {
       const price = 100;
 
@@ -131,6 +141,10 @@ describe("Marketplace", function () {
         expect(await baseTokenImp.balanceOf(firstAddr, id)).to.eq(1);
       });
 
+      it("doesn't cancel if not owner", async () => {
+        await expect(mktPlaceImp.connect(second).cancelNFT(id)).to.be.revertedWith("You are not owner or lot doesn't exist");
+      });
+
       it("executes purchase", async () => {
         await expectTuple(mktPlaceImp.listingsNFT(id), price, firstAddr);
         expect(await currencyTokenImp.balanceOf(secondAddr)).to.eq(initialBalance);
@@ -142,6 +156,11 @@ describe("Marketplace", function () {
         await expectTuple(mktPlaceImp.listingsNFT(id), price, constants.AddressZero);
         expect(await currencyTokenImp.balanceOf(secondAddr)).to.eq(initialBalance - price);
         expect(await baseTokenImp.balanceOf(secondAddr, id)).to.eq(1);
+      });
+
+      it.only("doesn't sell if lot doesn't exist", async () => {
+        await execTx(currencyTokenImp.connect(first).approve(mktPlace.address, price));
+        await expect(mktPlaceImp.connect(first).buyItemNFT(BN.from(1).shl(255).add(42))).to.be.revertedWith("Lot doesn't exist");
       });
     });
   });

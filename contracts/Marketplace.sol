@@ -61,12 +61,12 @@ contract Marketplace is ERC1155Holder {
     }
 
     modifier nonFungibleItem(uint _id) {
-        require(_id & NFT_FLAG == NFT_FLAG);
+        require(_id & NFT_FLAG == NFT_FLAG, "Must be NFT");
         _;
     }
 
     modifier fungibleItem(uint _id) {
-        require(_id & NFT_FLAG == 0);
+        require(_id & NFT_FLAG == 0, "Must be fungible");
         _;
     }
 
